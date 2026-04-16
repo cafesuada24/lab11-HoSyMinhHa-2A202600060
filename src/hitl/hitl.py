@@ -3,6 +3,7 @@ Lab 11 — Part 4: Human-in-the-Loop Design
   TODO 12: Confidence Router
   TODO 13: Design 3 HITL decision points
 """
+
 from dataclasses import dataclass
 
 
@@ -21,21 +22,23 @@ from dataclasses import dataclass
 # ============================================================
 
 HIGH_RISK_ACTIONS = [
-    "transfer_money",
-    "close_account",
-    "change_password",
-    "delete_data",
-    "update_personal_info",
+    'transfer_money',
+    'close_account',
+    'change_password',
+    'delete_data',
+    'update_personal_info',
 ]
 
 
 @dataclass
 class RoutingDecision:
     """Result of the confidence router."""
-    action: str          # "auto_send", "queue_review", "escalate"
+
+    response: str
+    action: str  # "auto_send", "queue_review", "escalate"
     confidence: float
     reason: str
-    priority: str        # "low", "normal", "high"
+    priority: str  # "low", "normal", "high"
     requires_human: bool
 
 
@@ -53,8 +56,12 @@ class ConfidenceRouter:
     HIGH_THRESHOLD = 0.9
     MEDIUM_THRESHOLD = 0.7
 
-    def route(self, response: str, confidence: float,
-              action_type: str = "general") -> RoutingDecision:
+    def route(
+        self,
+        response: str,
+        confidence: float,
+        action_type: str = 'general',
+    ) -> RoutingDecision:
         """Route a response based on confidence score and action type.
 
         Args:
@@ -84,12 +91,43 @@ class ConfidenceRouter:
         #      action="escalate", priority="high",
         #      requires_human=True, reason="Low confidence — escalating"
 
+        if action_type in HIGH_RISK_ACTIONS:
+            return RoutingDecision(
+                response=response,
+                action='escalate',
+                confidence=confidence,
+                priority='high',
+                requires_human=True,
+                reason=f'High-risk action: {action_type}',
+            )
+
+        if confidence >= 0.9:
+            return RoutingDecision(
+                response=response,
+                action='auto_send',
+                confidence=confidence,
+                priority='low',
+                requires_human=False,
+                reason='High confidence',
+            )
+
+        if confidence >= 0.7:
+            return RoutingDecision(
+                response=response,
+                action='queue_review',
+                confidence=confidence,
+                priority='normal',
+                requires_human=True,
+                reason='Meidum confidence - escalating',
+            )
+
         return RoutingDecision(
-            action="auto_send",
+            response=response,
+            action='escalate',
             confidence=confidence,
-            reason="TODO: implement routing logic",
-            priority="low",
-            requires_human=False,
+            reason='Low confidence - escalating',
+            priority='high',
+            requires_human=True,
         )  # TODO: Replace with implementation
 
 
@@ -108,28 +146,28 @@ class ConfidenceRouter:
 
 hitl_decision_points = [
     {
-        "id": 1,
-        "name": "TODO: Name this decision point",
-        "trigger": "TODO: When does this trigger?",
-        "hitl_model": "TODO: human-in-the-loop / human-on-the-loop / human-as-tiebreaker",
-        "context_needed": "TODO: What does the reviewer need to see?",
-        "example": "TODO: Give a concrete example scenario",
+        'id': 1,
+        'name': 'Validator',
+        'trigger': 'The model is almost certain (confidence >= 90%)',
+        'hitl_model': 'TODO: human-in-the-loop',
+        'context_needed': 'Human approval is required for AI outputs before action.',
+        'example': 'Execute a file writing action.',
     },
     {
-        "id": 2,
-        "name": "TODO: Name this decision point",
-        "trigger": "TODO: When does this trigger?",
-        "hitl_model": "TODO: human-in-the-loop / human-on-the-loop / human-as-tiebreaker",
-        "context_needed": "TODO: What does the reviewer need to see?",
-        "example": "TODO: Give a concrete example scenario",
+        'id': 2,
+        'name': 'Supervisor',
+        'trigger': 'The agent has medium certainty (70 <= confidence <= 90%)',
+        'hitl_model': 'human-on-the-loop',
+        'context_needed': 'High-volume tasks where speed is critical, but unmonitored is too risky.',
+        'example': 'A moderator watching an agent removing content, videos marked as low-certainty will be handled by human.',
     },
     {
-        "id": 3,
-        "name": "TODO: Name this decision point",
-        "trigger": "TODO: When does this trigger?",
-        "hitl_model": "TODO: human-in-the-loop / human-on-the-loop / human-as-tiebreaker",
-        "context_needed": "TODO: What does the reviewer need to see?",
-        "example": "TODO: Give a concrete example scenario",
+        'id': 3,
+        'name': 'Arbiter',
+        'trigger': 'Low certainty (< 70%)',
+        'hitl_model': 'human-as-tiebreaker',
+        'context_needed': 'Complex analysis, AI stuck.',
+        'example': 'Two agents disagree on a complex recommendations, the human makes the final choices.',
     },
 ]
 
@@ -138,47 +176,50 @@ hitl_decision_points = [
 # Quick tests
 # ============================================================
 
-def test_confidence_router():
+
+def test_confidence_router() -> None:
     """Test ConfidenceRouter with sample scenarios."""
     router = ConfidenceRouter()
 
     test_cases = [
-        ("Balance inquiry", 0.95, "general"),
-        ("Interest rate question", 0.82, "general"),
-        ("Ambiguous request", 0.55, "general"),
-        ("Transfer $50,000", 0.98, "transfer_money"),
-        ("Close my account", 0.91, "close_account"),
+        ('Balance inquiry', 0.95, 'general'),
+        ('Interest rate question', 0.82, 'general'),
+        ('Ambiguous request', 0.55, 'general'),
+        ('Transfer $50,000', 0.98, 'transfer_money'),
+        ('Close my account', 0.91, 'close_account'),
     ]
 
-    print("Testing ConfidenceRouter:")
-    print("=" * 80)
-    print(f"{'Scenario':<25} {'Conf':<6} {'Action Type':<18} {'Decision':<15} {'Priority':<10} {'Human?'}")
-    print("-" * 80)
+    print('Testing ConfidenceRouter:')
+    print('=' * 80)
+    print(
+        f'{"Scenario":<25} {"Conf":<6} {"Action Type":<18} {"Decision":<15} {"Priority":<10} {"Human?"}',
+    )
+    print('-' * 80)
 
     for scenario, conf, action_type in test_cases:
         decision = router.route(scenario, conf, action_type)
         print(
-            f"{scenario:<25} {conf:<6.2f} {action_type:<18} "
-            f"{decision.action:<15} {decision.priority:<10} "
-            f"{'Yes' if decision.requires_human else 'No'}"
+            f'{scenario:<25} {conf:<6.2f} {action_type:<18} '
+            f'{decision.action:<15} {decision.priority:<10} '
+            f'{"Yes" if decision.requires_human else "No"}',
         )
 
-    print("=" * 80)
+    print('=' * 80)
 
 
-def test_hitl_points():
+def test_hitl_points() -> None:
     """Display HITL decision points."""
-    print("\nHITL Decision Points:")
-    print("=" * 60)
+    print('\nHITL Decision Points:')
+    print('=' * 60)
     for point in hitl_decision_points:
-        print(f"\n  Decision Point #{point['id']}: {point['name']}")
-        print(f"    Trigger:  {point['trigger']}")
-        print(f"    Model:    {point['hitl_model']}")
-        print(f"    Context:  {point['context_needed']}")
-        print(f"    Example:  {point['example']}")
-    print("\n" + "=" * 60)
+        print(f'\n  Decision Point #{point["id"]}: {point["name"]}')
+        print(f'    Trigger:  {point["trigger"]}')
+        print(f'    Model:    {point["hitl_model"]}')
+        print(f'    Context:  {point["context_needed"]}')
+        print(f'    Example:  {point["example"]}')
+    print('\n' + '=' * 60)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     test_confidence_router()
     test_hitl_points()

@@ -9,21 +9,26 @@ Usage:
     python main.py --part 3     # Run only Part 3 (testing pipeline)
     python main.py --part 4     # Run only Part 4 (HITL design)
 """
-import sys
-import asyncio
+
 import argparse
+import asyncio
 
+from agents.agent import create_unsafe_agent, test_agent
+from attacks.attacks import generate_ai_attacks, run_attacks
 from core.config import setup_api_key
+from guardrails.input_guardrails import (
+    test_injection_detection,
+    test_input_plugin,
+    test_topic_filter,
+)
 
 
-async def part1_attacks():
+async def part1_attacks() -> list[dict[str, object]]:
     """Part 1: Attack an unprotected agent."""
     print("\n" + "=" * 60)
     print("PART 1: Attack Unprotected Agent")
     print("=" * 60)
 
-    from agents.agent import create_unsafe_agent, test_agent
-    from attacks.attacks import run_attacks, generate_ai_attacks
 
     # Create and test the unsafe agent
     agent, runner = create_unsafe_agent()
@@ -36,6 +41,7 @@ async def part1_attacks():
     # TODO 2: Generate AI attack test cases
     print("\n--- Generating AI attacks (TODO 2) ---")
     ai_attacks = await generate_ai_attacks()
+    results.extend(await run_attacks(agent, runner, ai_attacks))
 
     return results
 
@@ -48,11 +54,6 @@ async def part2_guardrails():
 
     # Part 2A: Input guardrails
     print("\n--- Part 2A: Input Guardrails ---")
-    from guardrails.input_guardrails import (
-        test_injection_detection,
-        test_topic_filter,
-        test_input_plugin,
-    )
     test_injection_detection()
     print()
     test_topic_filter()

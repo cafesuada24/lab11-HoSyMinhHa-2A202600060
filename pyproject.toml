@@ -1,0 +1,85 @@
+[project]
+name = "2a202600060-hosyminhha-day11"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "google-adk>=1.30.0",
+    "google-genai>=1.73.1",
+    "jupyter>=1.1.1",
+    "langchain-google-genai>=4.2.2",
+    "langchain-openai>=1.1.13",
+    "nemoguardrails>=0.21.0",
+]
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+[tool.ruff.lint.per-file-ignores]
+# "**/{tests,docs,tools}/*" = ["E402"]
+"**/tests/*" = ["S101"]
+
+[tool.ruff.format]
+# 5. Use single quotes in `ruff format`.
+quote-style = "single"
+indent-style = "space"
+line-ending = "auto"
+docstring-code-format = true
+docstring-code-line-length = 72
+
+[tool.ruff.lint]
+# select = [
+#     "ALL",
+# ]
+select = [
+    "F",      # pyflakes (runtime errors, unused imports/variables)
+    "E", "W", # pycodestyle (style and whitespace)
+    "I",      # isort (import sorting)
+    "N",      # pep8-naming
+    "UP",     # pyupgrade (modernize syntax)
+    "B",      # flake8-bugbear (common bugs & best practices)
+    "SIM",    # flake8-simplify (code simplification)
+    "C4",     # flake8-comprehensions (list/set/dict comprehension help)
+    "TC",     # flake8-type-checking (move typing imports to `if TYPE_CHECKING`)
+    "PL",     # flake8-unused-arguments
+    "RET",    # flake8-return (return statement issues)
+    "ARG",    # pylint rules (a subset)
+    "ANN",    # type annotations enforcement
+    "COM",    # flake8-commas
+    "C90",    # maccabe complexity
+    "D",      # pydocstyle
+    "A",      # flake8-builtins
+
+    # "YTT",
+    # "DTZ",
+    # "ISC",
+    # "ICN",
+    # "INP",
+    # "PIE",
+    # "PT",
+    # "TID",
+    # "PLC",
+    # "PLE",
+    # "PLR",
+    # "PLW",
+    # "RUF",
+    # "PYI",
+]
+
+ignore = [
+    'Q000',   # Double quote
+    'ERA001', # Code comment
+    'E501',   # line too long
+    'F841',   # pyright already supports this
+    'F401',   
+    'D416',   # numpydocstyle does not use colon in section name
+]
+
+fixable = ['ALL']
+unfixable = []
+
+[tool.ruff.lint.pydocstyle]
+# Use Google-style docstrings.
+convention = "google"
